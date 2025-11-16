@@ -36,11 +36,11 @@ temp/
 chroma_db/
 
 # Models (if downloaded locally)
-models/
-*.pt
-*.pth
-*.bin
-*.onnx
+# models/
+# *.pt
+# *.pth
+# *.bin
+# *.onnx
 
 # OS
 .DS_Store
