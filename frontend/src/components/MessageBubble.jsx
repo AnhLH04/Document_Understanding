@@ -2,6 +2,7 @@ import { User, Bot, AlertCircle } from 'lucide-react';
 import clsx from 'clsx';
 import ReactMarkdown from 'react-markdown';
 import SourcesPanel from './SourcesPanel';
+import ThinkingIndicator from './ThinkingIndicator';
 
 /**
  * Message bubble component with different styles for user/assistant/error
@@ -53,7 +54,18 @@ export default function MessageBubble({ message }) {
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-primary-100 to-secondary-100 text-primary-700 border border-primary-200">
                 {message.llmProvider === 'qwen' ? '🤖 Qwen' : '✨ Gemini'}
               </span>
+              {message.isStreaming && (
+                <span className="inline-flex items-center space-x-1">
+                  <span className="w-2 h-2 bg-primary-500 rounded-full animate-pulse"></span>
+                  <span className="text-xs text-primary-600">Streaming...</span>
+                </span>
+              )}
             </div>
+          )}
+
+          {/* Thinking indicator for streaming messages */}
+          {isAssistant && message.thinking && message.thinking.length > 0 && (
+            <ThinkingIndicator steps={message.thinking} />
           )}
 
           {/* Message text */}
@@ -79,7 +91,7 @@ export default function MessageBubble({ message }) {
                   ),
                 }}
               >
-                {message.content}
+                {message.content || (message.isStreaming ? '' : 'Thinking...')}
               </ReactMarkdown>
             ) : (
               <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
