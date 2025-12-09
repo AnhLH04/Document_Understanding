@@ -1,31 +1,55 @@
-# Document Understanding API
+# Document Understanding System
 
-AI-powered Document Understanding API với OCR, Vector Database Indexing, và Question Answering sử dụng RAG (Retrieval-Augmented Generation).
+Full-stack AI-powered Document Understanding system với OCR, Vector Database Indexing, Question Answering (RAG), và Beautiful Chat UI.
 
 ## 🌟 Tính năng
 
+### Backend (FastAPI)
 - **OCR Extraction**: Trích xuất văn bản và hình ảnh từ PDF/ảnh sử dụng DeepSeek-OCR
 - **Document Indexing**: Chunking theo trang và lưu trữ vào ChromaDB với embeddings
 - **AI Chat**: Trả lời câu hỏi dựa trên tài liệu đã index với LLM (Qwen hoặc Gemini)
 - **RESTful API**: FastAPI với Swagger documentation
 - **SOLID Principles**: Kiến trúc dễ maintain và mở rộng
 
+### Frontend (React)
+- **Beautiful UI**: Giao diện chat hiện đại với gradient và animations
+- **Thinking Indicator**: Hiển thị quá trình suy nghĩ của AI
+- **Sources Panel**: Xem các chunks được truy xuất từ hệ thống
+- **Model Switching**: Chuyển đổi giữa Qwen (local) và Gemini (API)
+- **Responsive Design**: Tương thích mọi thiết bị
+
 ## 🏗️ Kiến trúc
 
 ```
-app/
-├── core/           # Configuration và dependencies
-├── models/         # Pydantic schemas (request/response)
-├── routes/         # API endpoints
-│   ├── extract.py  # OCR extraction endpoint
-│   ├── index.py    # Indexing endpoint
-│   └── chat.py     # Chat/QA endpoint
-├── services/       # Business logic
-│   ├── ocr_service.py      # OCR processing
-│   ├── indexing_service.py # Document chunking & indexing
-│   └── rag_service.py      # RAG pipeline
-├── repositories/   # Data access layer (future)
-└── main.py         # FastAPI application
+Document_Understanding/
+├── app/                    # Backend (FastAPI)
+│   ├── core/              # Configuration và dependencies
+│   ├── models/            # Pydantic schemas
+│   ├── routes/            # API endpoints
+│   │   ├── extract.py     # OCR extraction
+│   │   ├── index.py       # Document indexing
+│   │   └── chat.py        # Chat/QA
+│   ├── services/          # Business logic (SOLID)
+│   │   ├── ocr_service.py
+│   │   ├── indexing_service.py
+│   │   └── rag_service.py
+│   └── main.py            # FastAPI app
+│
+├── frontend/              # Frontend (React)
+│   ├── src/
+│   │   ├── components/   # UI components
+│   │   │   ├── Header.jsx
+│   │   │   ├── ChatContainer.jsx
+│   │   │   ├── MessageBubble.jsx
+│   │   │   ├── ThinkingIndicator.jsx
+│   │   │   └── SourcesPanel.jsx
+│   │   ├── hooks/        # Custom React hooks
+│   │   ├── services/     # API integration
+│   │   └── App.jsx
+│   └── package.json
+│
+├── requirements.txt       # Python dependencies
+└── README.md
 ```
 
 ## 📋 Requirements
@@ -44,7 +68,9 @@ git clone <repository-url>
 cd Document_Understanding
 ```
 
-### 2. Cài đặt dependencies
+### 2. Backend Setup
+
+#### Cài đặt Python dependencies
 
 ```bash
 pip install -r requirements.txt
@@ -76,9 +102,18 @@ Chỉnh sửa `.env` và cấu hình:
 - `GOOGLE_API_KEY`: API key của Google Gemini (nếu sử dụng)
 - Các settings khác (optional)
 
+### 5. Frontend Setup
+
+```bash
+cd frontend
+npm install
+```
+
 ## 🎯 Usage
 
-### Khởi động API server
+### Khởi động hệ thống
+
+#### 1. Start Backend (Terminal 1)
 
 ```bash
 python -m app.main
@@ -90,9 +125,25 @@ hoặc
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-API sẽ chạy tại: http://localhost:8000
-
+Backend API: http://localhost:8000  
 Swagger UI: http://localhost:8000/docs
+
+#### 2. Start Frontend (Terminal 2)
+
+```bash
+cd frontend
+npm run dev
+```
+
+Frontend UI: http://localhost:3000
+
+### Sử dụng giao diện Chat
+
+1. Truy cập http://localhost:3000
+2. Chọn model (Qwen hoặc Gemini)
+3. Nhập câu hỏi về tài liệu
+4. Xem AI suy nghĩ và trả lời
+5. Click vào "Nguồn tham khảo" để xem chunks được truy xuất
 
 ### API Endpoints
 
