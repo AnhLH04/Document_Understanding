@@ -1,0 +1,30 @@
+# Web Framework
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# Settings Management
+pydantic==2.10.5
+pydantic-settings==2.7.1
+
+# OCR and Image Processing
+torch>=2.0.0
+transformers>=4.40.0
+pdf2image==1.17.0
+Pillow>=10.0.0
+
+# Document Processing and Embeddings
+langchain-core==0.3.28
+langchain-huggingface==0.1.2
+langchain-chroma==0.2.0
+sentence-transformers==3.4.1
+
+# Vector Database
+chromadb==0.5.23
+
+# LLM Integration
+google-generativeai>=0.8.0
+
+# Utilities
+loguru==0.7.3
+python-dotenv==1.0.1
