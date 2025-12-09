@@ -5,6 +5,7 @@ Includes retrieval, reranking, and generation with multiple LLM providers.
 Supports streaming for better UX.
 """
 
+import asyncio
 import gc
 from threading import Thread
 from typing import AsyncGenerator, List, Tuple
@@ -113,15 +114,17 @@ class LocalQwenGenerator(ILLMGenerator):
         thread = Thread(target=self.model.generate, kwargs=generation_kwargs)
         thread.start()
 
-        # Stream tokens
-        for text in streamer:
-            yield text
-
-        thread.join()
-
-        # Cleanup
-        torch.cuda.empty_cache()
-        gc.collect()
+        # Stream tokens asynchronously
+        try:
+            for text in streamer:
+                yield text
+                # Allow other coroutines to run
+                await asyncio.sleep(0)
+        finally:
+            thread.join()
+            # Cleanup
+            torch.cuda.empty_cache()
+            gc.collect()
 
 
 class GeminiGenerator(ILLMGenerator):
@@ -186,6 +189,8 @@ class GeminiGenerator(ILLMGenerator):
             for chunk in response:
                 if chunk.text:
                     yield chunk.text
+                    # Allow event loop to process - critical for streaming!
+                    await asyncio.sleep(0)
         except Exception as e:
             logger.error(f"Gemini API Streaming Error: {e}")
             yield "Xin lỗi, đã xảy ra lỗi khi kết nối với Gemini."
@@ -360,15 +365,19 @@ class RAGService:
         }
 
         # Step 3: Build context and generate with streaming
-        yield {"type": "status", "data": "Đang tạo câu trả lời..."}
+        # yield {"type": "status", "data": "Đang tạo câu trả lời..."}
         context = "\n\n".join(top_docs_texts)
 
         # Stream the answer
+        logger.info(f"Starting text generation with {self.generator_type}")
+        chunk_count = 0
         async for text_chunk in self.generator.generate_stream(user_query, context):
+            chunk_count += 1
+            logger.debug(f"Yielding text chunk #{chunk_count}: {len(text_chunk)} chars")
             yield {"type": "text", "data": text_chunk}
 
         yield {"type": "done", "data": ""}
-        logger.success("Streaming query processed successfully")
+        logger.success(f"Streaming query processed successfully - {chunk_count} chunks sent")
 
 
 def create_rag_service(vector_store: IVectorStoreRepository) -> RAGService:

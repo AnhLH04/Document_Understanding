@@ -129,8 +129,10 @@ async def chat_query_stream(request: ChatRequest):
             """Generator for Server-Sent Events."""
             try:
                 async for chunk in rag_service.query_stream(request.query):
-                    # Send each chunk as SSE
-                    yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
+                    # Send each chunk as SSE with explicit encoding
+                    data = json.dumps(chunk, ensure_ascii=False)
+                    logger.debug(f"Streaming chunk: {chunk.get('type')}")
+                    yield f"data: {data}\n\n"
                     
             except Exception as e:
                 logger.error(f"Streaming error: {e}")
