@@ -189,7 +189,7 @@ class RAGPipeline:
 # --- RUN ---
 if __name__ == "__main__":
 
-    CONFIG["google_api_key"] = "AIzaSyAzColcSsUtjp8Ti63G5tabGXQoL373e2Y"
+    CONFIG["google_api_key"] = ""
 
     try:
         rag = RAGPipeline(CONFIG)
