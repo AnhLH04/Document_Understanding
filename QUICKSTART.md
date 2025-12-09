@@ -70,8 +70,8 @@ npm run dev
 ## Access Points
 
 - **Frontend Chat UI**: http://localhost:3000
-- **Backend API**: http://localhost:8000
-- **API Documentation**: http://localhost:8000/docs
+- **Backend API**: http://localhost:1201
+- **API Documentation**: http://localhost:1201/docs
 
 ## First Steps
 
@@ -81,12 +81,12 @@ Before you can chat, you need to index documents:
 
 ```bash
 # Using API
-curl -X POST "http://localhost:8000/api/v1/index" \
+curl -X POST "http://localhost:1201/api/v1/index" \
   -H "Content-Type: application/json" \
   -d '{"file_path": "path/to/your/document.pdf"}'
 ```
 
-Or use Swagger UI at http://localhost:8000/docs
+Or use Swagger UI at http://localhost:1201/docs
 
 ### 2. Start Chatting
 
@@ -100,10 +100,10 @@ Or use Swagger UI at http://localhost:8000/docs
 
 ### Backend Issues
 
-**Port 8000 already in use:**
+**Port 1201 already in use:**
 ```bash
 # Windows
-netstat -ano | findstr :8000
+netstat -ano | findstr :1201
 taskkill /PID <pid> /F
 
 # Edit app/main.py to change port
@@ -123,7 +123,7 @@ server: { port: 3001 }
 ```
 
 **API connection failed:**
-- Check backend is running on port 8000
+- Check backend is running on port 1201
 - Check CORS settings
 - Verify proxy configuration in vite.config.js
 
@@ -144,7 +144,7 @@ npm run dev
 
 ### Backend
 ```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+uvicorn app.main:app --host 0.0.0.0 --port 1201 --workers 4
 ```
 
 ### Frontend

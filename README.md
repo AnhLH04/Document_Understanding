@@ -122,11 +122,11 @@ python -m app.main
 hoặc
 
 ```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn app.main:app --host 0.0.0.0 --port 1201 --reload
 ```
 
-Backend API: http://localhost:8000  
-Swagger UI: http://localhost:8000/docs
+Backend API: http://localhost:1201  
+Swagger UI: http://localhost:1201/docs
 
 #### 2. Start Frontend (Terminal 2)
 
@@ -229,7 +229,7 @@ POST /api/v1/chat
 ```python
 import requests
 
-BASE_URL = "http://localhost:8000/api/v1"
+BASE_URL = "http://localhost:1201/api/v1"
 
 # 1. Extract document
 response = requests.post(f"{BASE_URL}/extract", json={

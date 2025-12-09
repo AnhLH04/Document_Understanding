@@ -35,7 +35,7 @@ npm run dev
 
 Frontend will run at http://localhost:3000
 
-Backend API should be running at http://localhost:8000
+Backend API should be running at http://localhost:1201
 
 ## Build for Production
 

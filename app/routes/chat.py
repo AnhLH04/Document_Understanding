@@ -7,9 +7,17 @@ from loguru import logger
 
 from app.core.config import settings
 from app.models import ChatRequest, ChatResponse, ErrorResponse, SourceDocument
+from app.core.dependencies import get_vector_store
+from app.services import create_rag_service
+from app.services.rag_service import LocalQwenGenerator, GeminiGenerator
+
+llm_provider = settings.LLM_PROVIDER
+vector_store = get_vector_store()
+local_generator = LocalQwenGenerator()
+gemini_generator = GeminiGenerator()
+rag_service = create_rag_service(vector_store)
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
-
 
 @router.post(
     "",
@@ -42,14 +50,11 @@ async def chat_query(request: ChatRequest) -> ChatResponse:
             raise HTTPException(
                 status_code=400, detail=f"Invalid LLM provider: {llm_provider}. Must be 'qwen' or 'gemini'"
             )
-
-        # Get RAG service with specified provider
-        # Note: We can't use dependency injection here because provider is dynamic
-        from app.core.dependencies import get_vector_store
-        from app.services import create_rag_service
-
-        vector_store = get_vector_store()
-        rag_service = create_rag_service(vector_store, llm_provider)
+        # Set the appropriate generator in RAG service
+        if llm_provider == "qwen":
+            rag_service.set_generator(local_generator)
+        else:
+            rag_service.set_generator(gemini_generator)
 
         logger.info(f"Processing chat query with {llm_provider}: {request.query}")
 

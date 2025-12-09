@@ -43,6 +43,7 @@ class LocalQwenGenerator(ILLMGenerator):
         self.max_new_tokens = settings.LOCAL_LLM_MAX_TOKENS
         self.temperature = settings.LOCAL_LLM_TEMPERATURE
 
+        logger.info(f"Loading tokenizer and model for {settings.LOCAL_LLM_MODEL}...")
         self.tokenizer = AutoTokenizer.from_pretrained(settings.LOCAL_LLM_MODEL)
         self.model = AutoModelForCausalLM.from_pretrained(
             settings.LOCAL_LLM_MODEL, torch_dtype="auto", device_map=self.device
@@ -166,17 +167,17 @@ class Reranker:
 class RAGService:
     """
     Main RAG service orchestrating the retrieval-augmented generation pipeline.
-    Follows Dependency Inversion: depends on abstractions (ILLMGenerator, IVectorStoreRepository).
-    Open/Closed Principle: open for extension (new generators), closed for modification.
+    Follows Dependency Inversion: depends on abstractions (IVectorStoreRepository).
     """
 
-    def __init__(self, vector_store: IVectorStoreRepository, reranker: Reranker, generator: ILLMGenerator):
+    def __init__(self, vector_store: IVectorStoreRepository, reranker: Reranker):
         self.vector_store = vector_store
         self.reranker = reranker
+    def set_generator(self, generator: ILLMGenerator):
+        """Set the LLM generator dynamically."""
         self.generator = generator
         self.generator_type = type(generator).__name__
-        logger.info(f"RAGService initialized with {self.generator_type}")
-
+        logger.info(f"RAGService configured to use generator: {self.generator_type}")
     def query(self, user_query: str, retrieval_k: int = None, rerank_k: int = None) -> Tuple[str, List[Document]]:
         """
         Process user query through RAG pipeline.
@@ -234,29 +235,17 @@ class RAGService:
         return answer, source_docs
 
 
-def create_rag_service(vector_store: IVectorStoreRepository, llm_provider: str = None) -> RAGService:
+def create_rag_service(vector_store: IVectorStoreRepository) -> RAGService:
     """
-    Factory function to create RAGService with specified LLM provider.
-    Dependency Injection pattern.
-
     Args:
         vector_store: Vector store repository instance
-        llm_provider: LLM provider to use ('qwen' or 'gemini')
 
     Returns:
         Configured RAGService instance
     """
-    llm_provider = llm_provider or settings.LLM_PROVIDER
 
     # Create reranker
     reranker = Reranker()
 
-    # Create generator based on provider
-    if llm_provider == "gemini":
-        generator = GeminiGenerator()
-    elif llm_provider == "qwen":
-        generator = LocalQwenGenerator()
-    else:
-        raise ValueError(f"Unknown LLM provider: {llm_provider}")
-
-    return RAGService(vector_store, reranker, generator)
+    rag_service = RAGService(vector_store, reranker)
+    return rag_service

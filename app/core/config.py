@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     # Paths
     BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent
     OUTPUT_DIR: Path = BASE_DIR / "ocr_output"
-    DB_PATH: Path = BASE_DIR / "db_chromadb"
+    DB_PATH: Path = BASE_DIR / "db_ds"
     TEMP_DIR: Path = BASE_DIR / "temp"
 
     # OCR Settings
@@ -33,7 +33,7 @@ class Settings(BaseSettings):
 
     # Embedding Settings
     EMBEDDING_MODEL: str = "Qwen/Qwen3-Embedding-0.6B"
-    COLLECTION_NAME: str = "documents"
+    COLLECTION_NAME: str = "slide_ds"
 
     # Chunking Settings
     CHUNK_BATCH_SIZE: int = 5
