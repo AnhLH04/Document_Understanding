@@ -10,7 +10,8 @@ import gc
 from threading import Thread
 from typing import AsyncGenerator, List, Tuple
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 import torch
 from langchain_core.documents import Document
 from loguru import logger
@@ -129,7 +130,7 @@ class LocalQwenGenerator(ILLMGenerator):
 
 class GeminiGenerator(ILLMGenerator):
     """
-    Gemini API LLM generator with streaming support.
+    Gemini API LLM generator with streaming support and thinking capability.
     Single Responsibility: Only handles Gemini API generation.
     """
 
@@ -139,11 +140,13 @@ class GeminiGenerator(ILLMGenerator):
 
         logger.info(f"Initializing Gemini Model: {settings.GEMINI_MODEL}")
 
-        genai.configure(api_key=settings.GOOGLE_API_KEY)
-        self.model = genai.GenerativeModel(
-            model_name=settings.GEMINI_MODEL,
-            system_instruction="Bạn là trợ lý AI chuyên trả lời câu hỏi dựa trên tài liệu bằng tiếng Việt.",
-        )
+        # Use new google-genai SDK
+        self.client = genai.Client(api_key=settings.GOOGLE_API_KEY)
+        self.model_name = settings.GEMINI_MODEL
+        
+        # Check if model supports thinking (Gemini 2.5+)
+        self.supports_thinking = "2.5" in settings.GEMINI_MODEL or "3" in settings.GEMINI_MODEL
+        logger.info(f"Gemini thinking support: {self.supports_thinking}")
 
         logger.success("Gemini API connected successfully")
 
@@ -157,11 +160,28 @@ class GeminiGenerator(ILLMGenerator):
         )
 
         try:
-            response = self.model.generate_content(
-                prompt,
-                generation_config=genai.types.GenerationConfig(
-                    temperature=settings.GEMINI_TEMPERATURE, max_output_tokens=settings.GEMINI_MAX_TOKENS
-                ),
+            # Build config with thinking support
+            config = types.GenerateContentConfig(
+                temperature=settings.GEMINI_TEMPERATURE,
+                max_output_tokens=settings.GEMINI_MAX_TOKENS,
+                system_instruction="Bạn là trợ lý AI chuyên trả lời câu hỏi dựa trên tài liệu bằng tiếng Việt.",
+            )
+            
+            if self.supports_thinking:
+                config = types.GenerateContentConfig(
+                    temperature=settings.GEMINI_TEMPERATURE,
+                    max_output_tokens=settings.GEMINI_MAX_TOKENS,
+                    system_instruction="Bạn là trợ lý AI chuyên trả lời câu hỏi dựa trên tài liệu bằng tiếng Việt.",
+                    thinking_config=types.ThinkingConfig(
+                        thinking_budget=1024,
+                        include_thoughts=True
+                    )
+                )
+            
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+                config=config,
             )
             return response.text.strip()
         except Exception as e:
@@ -169,7 +189,7 @@ class GeminiGenerator(ILLMGenerator):
             return "Xin lỗi, đã xảy ra lỗi khi kết nối với Gemini."
 
     async def generate_stream(self, query: str, context: str) -> AsyncGenerator[str, None]:
-        """Generate answer with streaming using Gemini API."""
+        """Generate answer with streaming using Gemini API, including thinking output."""
         prompt = (
             f"Dưới đây là thông tin trích xuất từ tài liệu:\n"
             f"---\n{context}\n---\n"
@@ -178,19 +198,71 @@ class GeminiGenerator(ILLMGenerator):
         )
 
         try:
-            response = self.model.generate_content(
-                prompt,
-                generation_config=genai.types.GenerationConfig(
-                    temperature=settings.GEMINI_TEMPERATURE, max_output_tokens=settings.GEMINI_MAX_TOKENS
-                ),
-                stream=True,
+            # Build config with thinking support
+            config = types.GenerateContentConfig(
+                temperature=settings.GEMINI_TEMPERATURE,
+                max_output_tokens=settings.GEMINI_MAX_TOKENS,
+                system_instruction="Bạn là trợ lý AI chuyên trả lời câu hỏi dựa trên tài liệu bằng tiếng Việt.",
             )
+            
+            if self.supports_thinking:
+                config = types.GenerateContentConfig(
+                    temperature=settings.GEMINI_TEMPERATURE,
+                    max_output_tokens=settings.GEMINI_MAX_TOKENS,
+                    system_instruction="Bạn là trợ lý AI chuyên trả lời câu hỏi dựa trên tài liệu bằng tiếng Việt.",
+                    thinking_config=types.ThinkingConfig(
+                        thinking_budget=1024,
+                        include_thoughts=True
+                    )
+                )
 
-            for chunk in response:
-                if chunk.text:
+            thinking_started = False
+            thinking_ended = False
+
+            for chunk in self.client.models.generate_content_stream(
+                model=self.model_name,
+                contents=prompt,
+                config=config,
+            ):
+                # Process parts for thinking and text content
+                if hasattr(chunk, 'candidates') and chunk.candidates:
+                    for candidate in chunk.candidates:
+                        # Safety check for content and parts
+                        if not hasattr(candidate, 'content') or candidate.content is None:
+                            continue
+                        if not hasattr(candidate.content, 'parts') or candidate.content.parts is None:
+                            continue
+                            
+                        for part in candidate.content.parts:
+                            if not hasattr(part, 'text') or not part.text:
+                                continue
+                                
+                            # Check if this is thinking content
+                            if hasattr(part, 'thought') and part.thought:
+                                if not thinking_started:
+                                    yield "<think>\n"
+                                    thinking_started = True
+                                yield part.text
+                                await asyncio.sleep(0)
+                            else:
+                                # Regular text content
+                                if thinking_started and not thinking_ended:
+                                    yield "\n</think>\n\n"
+                                    thinking_ended = True
+                                yield part.text
+                                await asyncio.sleep(0)
+                # Fallback for simple text attribute
+                elif hasattr(chunk, 'text') and chunk.text:
+                    if thinking_started and not thinking_ended:
+                        yield "\n</think>\n\n"
+                        thinking_ended = True
                     yield chunk.text
-                    # Allow event loop to process - critical for streaming!
                     await asyncio.sleep(0)
+            
+            # Close thinking tag if still open
+            if thinking_started and not thinking_ended:
+                yield "\n</think>\n\n"
+                
         except Exception as e:
             logger.error(f"Gemini API Streaming Error: {e}")
             yield "Xin lỗi, đã xảy ra lỗi khi kết nối với Gemini."

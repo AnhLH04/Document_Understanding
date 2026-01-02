@@ -48,13 +48,13 @@ class Settings(BaseSettings):
 
     # Local LLM (Qwen) Settings
     LOCAL_LLM_MODEL: str = "Qwen/Qwen3-0.6B"
-    LOCAL_LLM_MAX_TOKENS: int = 1024
+    LOCAL_LLM_MAX_TOKENS: int = 2048
     LOCAL_LLM_TEMPERATURE: float = 0.3
 
     # Gemini Settings
     GOOGLE_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-2.5-pro"
-    GEMINI_MAX_TOKENS: int = 1024
+    GEMINI_MAX_TOKENS: int = 8096
     GEMINI_TEMPERATURE: float = 0.3
 
     # Device Settings
